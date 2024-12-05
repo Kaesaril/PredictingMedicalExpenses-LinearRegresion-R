@@ -1,1 +1,2 @@
 # PredictingMedicalExpenses-LinearRegresion-R
+Health insurance companies aim to make a profit by collecting more money in yearly premiums than they pay out for medical care. To do this, they use data and models to predict how much they will need to spend on medical expenses for different groups of people. Some health conditions are more common in certain groups, like lung cancer in smokers or heart disease in obese individuals.
