@@ -1,0 +1,176 @@
+---
+title: "Regression"
+author: "César Nieto González"
+date: "2023-11-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#### Part 1: Linear Regression -------------------
+
+Regression is a statistical technique used to understand and model the relationship between a dependent variable (the one we want to predict) and one or more independent variables (the ones we use to make the prediction).
+•	The basic statistical principles used in regression, a technique that models the size and strength of numeric relationships
+•	How to prepare data for regression analysis, and estimate and interpret a regression model
+•	A pair of hybrid techniques known as regression trees and model trees, which adapt decision tree classifiers for numeric prediction tasks
+
+
+•	Examining how populations and individuals vary by their measured characteristics, in scientific studies in the fields of economics, sociology, psychology, physics, and ecology
+•	Quantifying the causal relationship between an event and its response, in cases such as clinical drug trials, engineering safety tests, or marketing research
+•	Identifying patterns that can be used to forecast future behavior given known criteria, such as for predicting insurance claims, natural disaster damage, election results, and crime rates
+
+
+ 
+
+ Example: Predicting Medical Expenses ----
+
+Health insurance companies aim to make a profit by collecting more money in yearly premiums than they pay out for medical care. To do this, they use data and models to predict how much they will need to spend on medical expenses for different groups of people. Some health conditions are more common in certain groups, like lung cancer in smokers or heart disease in obese individuals.
+
+The goal of this analysis is to use patient data to estimate
+the average medical expenses for these different groups. 
+These estimates help determine how much people should pay for
+their health insurance premiums. In the first step, data is collected, and in this case, a simulated dataset is used based on real-world statistics from the U.S. Census Bureau.
+ Step 2: Exploring and preparing the data ----
+```{r}
+insurance <- read.csv("insurance.csv", stringsAsFactors = TRUE)
+str(insurance)
+```
+
+ summarize the charges variable
+```{r}
+summary(insurance$expenses)
+```
+
+ histogram of insurance charges Our model's dependent variable is expenses, which measures the medical costs each person charged to the insurance plan for the year.
+```{r}
+hist(insurance$expenses)
+```
+As expected, the figure shows a right-skewed distribution. It also shows that the majority of people in our data have yearly medical expenses between zero and $15,000, in spite of the fact that the tail of the distribution extends far past these peaks. Although this distribution is not ideal for a linear regression, knowing this weakness ahead of time may help us design a better-fitting model later on.
+
+The ellipse for age and expenses in much more stretched, reflecting its stronger correlation (0.30). The dot at the center of the ellipse is a point reflecting the means of the x axis and y axis variables
+
+ table of region
+```{r}
+table(insurance$region)
+```
+ exploring relationships among features: correlation matrix
+```{r}
+cor(insurance[c("age", "bmi", "children", "expenses")])
+```
+
+None of the correlations in the matrix are very strong, but there are some notable associations. For instance, age and bmi appear to have a weak positive correlation, meaning that as someone ages, their body mass tends to increase. There are also positive correlations between age and expenses, bmi and expenses, and children and expenses.
+
+An alternative is to create a scatterplot matrix (sometimes abbreviated as SPLOM), which is simply a collection of scatterplots arranged in a grid. It is used to detect patterns among three or more variables
+
+We can use R's graphical capabilities to create a scatterplot matrix for the four numeric features: age, bmi, children, and expenses. The pairs() function is provided in the default R installation and provides basic functionality for producing scatterplot matrices. To invoke the function, simply provide it the data frame to plot
+```{r}
+pairs(insurance[c("age", "bmi", "children", "expenses")])
+```
+
+ The relationship between age and expenses displays several relatively straight lines, while the bmi versus expenses plot has two distinct groups of points.
+ 
+ The ellipse for age and expenses in much more stretched, reflecting its stronger correlation (0.30). The dot at the center of the ellipse is a point reflecting the means of the x axis and y axis variables
+
+ more informative scatterplot matrix
+```{r}
+library(psych)
+pairs.panels(insurance[c("age", "bmi", "children", "expenses")])
+```
+
+The curve drawn on the scatterplot is called a loess curve. It indicates the general relationship between the x axis and y axis variables. It is best understood by example. The curve for age and children is an upside-down U, peaking around middle age. This means that the oldest and youngest people in the sample have fewer children on the insurance plan than those around middle age. Because this trend is nonlinear, this finding could not have been inferred from the correlations alone. On the other hand, the loess curve for age and bmi is a line sloping up gradually, implying that body mass increases with age, but we had already inferred this from the correlation matrix.
+
+
+ Step 3: Training a model on the data ---- To fit a linear regression model to data with R, the lm() function can be used. This is part of the stats package, which should be included and loaded by default with your R installation
+ 
+ 
+```{r}
+ins_model <- lm(expenses ~ age + children + bmi + sex + smoker + region,
+                data = insurance)
+```
+ins_model <- lm(expenses ~ ., data = insurance) # this is equivalent to above
+
+
+
+
+see the estimated beta coefficients
+```{r}
+ins_model
+```
+
+the dependent variable expenses goes to the left of the tilde while the independent variables go to the right, separated by + signs. 
+The beta coefficients indicate the estimated increase in expenses for an increase of one unit in each of the features, assuming all other values are held constant. For instance, for each additional year of age, we would expect $256.80 higher medical expenses on average, assuming everything else is held equal.
+Similarly, each additional child results in an average of $475.70 in additional medical expenses each year, and each unit increase in BMI is associated with an average increase of $339.30 in yearly medical expenses, all else equal.
+
+ Step 4: Evaluating model performance ----
+ see more detail about the estimated beta coefficients
+```{r}
+summary(ins_model)
+```
+
+In the Residuals section, summary statistics of model prediction errors are presented, revealing occasional underestimation of expenses by almost $30,000. However, the majority of predictions fall within a range of approximately $2,850.90 above and $1,383.90 below actual values. Additionally, p-values of regression coefficients are examined to assess variable significance. The multiple coefficient of determination (R-squared) indicates the model explains roughly 75% of the variation in the dependent variable.
+
+ Step 5: Improving model performance ----
+
+ add a higher-order "age" term
+```{r}
+insurance$age2 <- insurance$age^2
+```
+The model fit statistics help to determine whether our changes improved the performance of the regression model. Relative to our first model, the R-squared value has improved from 0.75 to about 0.87.
+Similarly, the adjusted R-squared value, which takes into account the fact that the model grew in complexity, improved from 0.75 to 0.87. Our model is now explaining 87 percent of the variation in medical treatment costs. Additionally, our theories about the model's functional form seem to be validated. The higher-order age2 term is statistically significant, as is the obesity indicator, bmi30. The interaction between obesity and smoking suggests a massive effect; in addition to the increased costs of over $13,404 for smoking alone, obese smokers spend another $19,810 per year. This may suggest that smoking exacerbates diseases associated with obesity.
+
+ add an indicator for BMI >= 30
+```{r}
+insurance$bmi30 <- ifelse(insurance$bmi >= 30, 1, 0)
+```
+
+ create final model
+```{r}
+ins_model2 <- lm(expenses ~ age + age2 + children + bmi + sex +
+                   bmi30*smoker + region, data = insurance)
+
+summary(ins_model2)
+```
+
+ making predictions with the regression model
+```{r}
+insurance$pred <- predict(ins_model2, insurance)
+cor(insurance$pred, insurance$expenses)
+```
+
+The correlation of 0.93 suggests a very strong linear relationship between the predicted and actual values
+```{r}
+plot(insurance$pred, insurance$expenses)
+abline(a = 0, b = 1, col = "red", lwd = 3, lty = 2)
+```
+
+We can see here that a small number of patients with much larger-than-expected medical expenses are balanced by a larger number of patients with slightly smaller-than-expected expenses.
+
+ For example, to estimate the insurance expenses for a 30 year old, overweight, male non-smoker with two children in the Northeast, type:
+```{r}
+predict(ins_model2,
+        data.frame(age = 30, age2 = 30^2, children = 2,
+                   bmi = 30, sex = "male", bmi30 = 1,
+                   smoker = "no", region = "northeast"))
+```
+
+Using this value, the insurance company might need to set its prices to about $6,000 per year, or $500 per month in order to break even for this demographic group. To compare the rate for a female who is otherwise similar, use the predict() function in much the same way:
+```{r}
+predict(ins_model2,
+        data.frame(age = 30, age2 = 30^2, children = 2,
+                   bmi = 30, sex = "female", bmi30 = 1,
+                   smoker = "no", region = "northeast"))
+```
+
+Note that the difference between these two values, 5,973.774 - 6,470.543 = -496.769, is the same as the estimated regression model coefficient for sexmale. On average, males are estimated to have about $496 less in expenses for the plan per year, all else being equal.
+
+
+For instance, using the model's regression coefficient of 678.6017 for the number of children we can predict that reducing the children from two to zero will result in a drop in expenses of 2 * 678.6017 = 1,357.203 as follows:
+```{r}
+predict(ins_model2,
+        data.frame(age = 30, age2 = 30^2, children = 0,
+                   bmi = 30, sex = "female", bmi30 = 1,
+                   smoker = "no", region = "northeast"))
+```
+
+
